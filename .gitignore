@@ -1,0 +1,32 @@
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# Java
+target/
+*.class
+
+# Maven
+.settings/
+.project
+.classpath
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+
+# Docker
+*.log
+*.env
+
+# JetBrains IDEs
+.idea/
+
+# OS/System
+.DS_Store
+Thumbs.db
