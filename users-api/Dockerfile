@@ -1,7 +1,7 @@
-FROM eclipse-temurin:8-jdk AS build
+FROM maven:3.8-eclipse-temurin-8 AS build
 WORKDIR /app
 COPY . .
-RUN ./mvnw clean install -DskipTests
+RUN mvn clean install -DskipTests
 
 FROM eclipse-temurin:8-jre
 WORKDIR /app
