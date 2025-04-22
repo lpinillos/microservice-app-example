@@ -1,10 +1,8 @@
 name: Python CI
-
 on:
   push:
     paths:
-      - 'log-message-processor/'
-
+      - 'log-message-processor/**'
 jobs:
   build:
     runs-on: ubuntu-latest
