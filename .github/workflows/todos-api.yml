@@ -1,4 +1,5 @@
-name: Todos-api
+name: NodeJS CI - todos-api
+
 on:
   push:
     branches: ["**"]
@@ -28,9 +29,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tests
+      - name: Run tests (if defined)
         run: |
           if [ -f "package.json" ] && jq -e '.scripts.test' package.json > /dev/null; then
             npm test
           else
             echo "No test script defined, skipping tests."
+          fi
