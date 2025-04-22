@@ -1,5 +1,4 @@
 name: CI - Auth API
-
 on:
   push:
     branches:
@@ -11,7 +10,6 @@ on:
       - infra/dev
     paths:
       - auth-api/**
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
