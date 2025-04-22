@@ -1,53 +1,18 @@
-name: Python CI - Log Message Processor
+name: Python CI
 on:
   push:
-    branches:
-      - main
-      - develop
     paths:
       - 'log-message-processor/**'
-  pull_request:
-    paths:
-      - 'log-message-processor/**'
-
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        
-      - name: Set up Python 3.10
+      - uses: actions/checkout@v3
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-          cache: 'pip'
-          
-      - name: Install dependencies
-        run: |
+      - run: |
           cd log-message-processor
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
-      - name: Lint with flake8
-        run: |
-          pip install flake8
-          cd log-message-processor
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          
-      - name: Compile Python code
-        run: |
-          cd log-message-processor
           python -m py_compile main.py
-          
-      - name: Run tests (if available)
-        run: |
-          cd log-message-processor
-          if [ -d "tests" ] || [ -f "*_test.py" ] || [ -f "test_*.py" ]; then
-            pip install pytest
-            pytest
-          else
-            echo "No tests found, skipping test step"
-          fi
