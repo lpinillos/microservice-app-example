@@ -1,0 +1,32 @@
+name: Todos-api
+
+on:
+  push:
+    paths:
+      - 'todos-api/**'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: todos-api
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        run: docker build -t todos-api:test .
+        
+      - name: Run Docker container (test)
+        run: docker run --rm -d -p 8082:8082 --name todos-api-test todos-api:test && sleep 5
+
+      - name: Check container logs (optional)
+        run: docker logs todos-api-test
+
+      - name: Stop container
+        if: always()
+        run: docker stop todos-api-test || true
