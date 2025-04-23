@@ -5,7 +5,7 @@ const {Annotation,
 
 const OPERATION_CREATE = 'CREATE',
       OPERATION_DELETE = 'DELETE';
-
+//test
 class TodoController {
     constructor({tracer, redisClient, logChannel}) {
         this._tracer = tracer;
