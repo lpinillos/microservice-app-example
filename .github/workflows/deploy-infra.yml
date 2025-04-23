@@ -39,7 +39,7 @@ jobs:
       - name: Generate Ansible Inventory
         run: |
           echo "[all]" > ansible/inventory.ini
-          echo "${{ steps.tf_output.outputs.ip }} ansible_user=azureuser ansible_ssh_pass=bruno1234. ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> ansible/inventory.ini
+          echo "vm ansible_host=${{ steps.tf_output.outputs.ip }} ansible_user=azureuser ansible_ssh_pass=bruno1234. ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> ansible/inventory.ini
           cat ansible/inventory.ini
       - name: Save Ansible Inventory as Artifact
         uses: actions/upload-artifact@v4
