@@ -43,19 +43,19 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
         run: |
-          # Captura la IP limpiando cualquier texto adicional
-          PUBLIC_IP=$(terraform output -raw public_ip_address | head -n 1 | tr -d '[:space:]')
-          echo "Captured IP address: $PUBLIC_IP"
+          cd infra
+          # Guarda la salida completa en un archivo
+          terraform output > tf_output.txt
           
-          # Verifica que sea una dirección IP válida
-          if [[ $PUBLIC_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-            echo "Successfully set PUBLIC_IP environment variable"
-          else
-            echo "Error: The captured value '$PUBLIC_IP' doesn't appear to be a valid IP address"
-            exit 1
-          fi
-        working-directory: infra
+          # Muestra el archivo para depuración
+          cat tf_output.txt
+          
+          # Busca la línea con la IP y extráela
+          IP=$(grep "public_ip_address" tf_output.txt | awk '{print $3}')
+          echo "Extracted IP: $IP"
+          
+          # Establecer la variable de entorno
+          echo "PUBLIC_IP=$IP" >> $GITHUB_ENV
       
       - name: Install Ansible and sshpass
         run: sudo apt-get update && sudo apt-get install -y ansible sshpass
