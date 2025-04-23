@@ -29,23 +29,28 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: infra
 
-      - name: Get Terraform Output
+      - name: Get Terraform Output (Public IP)
         id: tf_output
         run: |
-          ip=$(terraform output -raw public_ip_address | head -n1)
+          ip=$(terraform output -raw public_ip_address)
           echo "ip=$ip" >> $GITHUB_OUTPUT
         working-directory: infra
 
-      - name: Generate Ansible Inventory
-        run: |
-          echo "[all]" > ansible/inventory.ini
-          echo "vm ansible_host=${{ steps.tf_output.outputs.ip }} ansible_user=azureuser ansible_ssh_pass=bruno1234. ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> ansible/inventory.ini
-          cat ansible/inventory.ini
-      - name: Save Ansible Inventory as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: inventory
-          path: ansible/inventory.ini
+      - name: Install SSH tools
+        run: sudo apt-get update && sudo apt-get install -y sshpass
 
-      - name: Run Ansible Playbook (initial provisioning)
-        run: ansible-playbook ansible/deploy.yml -i ansible/inventory.ini
+      - name: Deploy app via SSH
+        run: |
+          sshpass -p 'TuPassword1234!' ssh -o StrictHostKeyChecking=no azureuser@${{ steps.tf_output.outputs.ip }} << 'ENDSSH'
+            sudo apt-get update
+            sudo apt-get install -y docker.io docker-compose git
+
+            if [ ! -d microservice-app-example ]; then
+              git clone https://github.com/lpinillos/microservice-app-example.git
+            else
+              cd microservice-app-example && git pull
+            fi
+
+            cd microservice-app-example
+            sudo docker-compose up -d
+          ENDSSH
