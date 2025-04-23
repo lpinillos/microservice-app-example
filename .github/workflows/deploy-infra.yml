@@ -42,5 +42,11 @@ jobs:
         run: |
           sed "s/__IP_PLACEHOLDER__/${{ steps.tf_output.outputs.ip }}/g" ansible/inventory-template.ini > ansible/inventory.ini
 
+      - name: Save Ansible Inventory as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: inventory
+          path: ansible/inventory.ini
+
       - name: Run Ansible Playbook (initial provisioning)
         run: ansible-playbook ansible/deploy.yml -i ansible/inventory.ini
