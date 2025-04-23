@@ -46,7 +46,7 @@ jobs:
           fi
           
           echo "Encontrada IP: $IP"
-          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          echo "ip=${IP}" >> $GITHUB_OUTPUT
           
       - name: Verify IP
         run: echo "VM IP → ${{ steps.extract_ip.outputs.ip }}"
