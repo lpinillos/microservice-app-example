@@ -1,8 +1,30 @@
+version: "3.8"
 services:
   redis:
     image: redis:7
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  cache:
+    image: redis:7
+    ports:
+      - "6380:6379"
+    volumes:
+      - cache-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
 
   auth-api:
     build: ./auth-api
@@ -10,18 +32,41 @@ services:
       - JWT_SECRET=PRFT
       - AUTH_API_PORT=8000
       - USERS_API_ADDRESS=http://users-api:8083
+      - CIRCUIT_BREAKER_ENABLED=true
+      - CIRCUIT_BREAKER_TIMEOUT=3000
+      - CIRCUIT_BREAKER_RESET_TIMEOUT=30000
+      - CIRCUIT_BREAKER_ERROR_THRESHOLD=50
     ports:
       - "8000:8000"
     depends_on:
       - users-api
+      - cache
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   users-api:
     build: ./users-api
     environment:
       - JWT_SECRET=PRFT
       - SERVER_PORT=8083
+      - CACHE_HOST=cache
+      - CACHE_PORT=6379
+      - CACHE_TTL=300
+      - CACHE_ENABLED=true
     ports:
       - "8083:8083"
+    depends_on:
+      - cache
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   todos-api:
     build: ./todos-api
@@ -31,10 +76,25 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_CHANNEL=log_channel
+      - CACHE_HOST=cache
+      - CACHE_PORT=6379
+      - CACHE_TTL=300
+      - CACHE_ENABLED=true
+      - CIRCUIT_BREAKER_ENABLED=true
+      - CIRCUIT_BREAKER_TIMEOUT=3000
+      - CIRCUIT_BREAKER_RESET_TIMEOUT=30000
+      - CIRCUIT_BREAKER_ERROR_THRESHOLD=50
     ports:
       - "8082:8082"
     depends_on:
       - redis
+      - cache
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   log-processor:
     build: ./log-message-processor
@@ -44,6 +104,7 @@ services:
       - REDIS_CHANNEL=log_channel
     depends_on:
       - redis
+    restart: on-failure
 
   frontend:
     build: ./frontend
@@ -51,8 +112,20 @@ services:
       - PORT=8081
       - AUTH_API_ADDRESS=http://auth-api:8000
       - TODOS_API_ADDRESS=http://todos-api:8082
+      - RETRY_ATTEMPTS=3
+      - RETRY_DELAY=1000
     ports:
       - "8081:8081"
     depends_on:
       - auth-api
       - todos-api
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  redis-data:
+  cache-data:
