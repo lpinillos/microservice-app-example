@@ -32,14 +32,17 @@ jobs:
       - name: Get Terraform Output
         id: tf_output
         run: |
-          ip=$(terraform output -raw public_ip_address | head -n1)
+          ip=$(terraform output -raw public_ip_address)
           echo "ip=$ip" >> $GITHUB_OUTPUT
         working-directory: infra
+        
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible sshpass
 
       - name: Generate Ansible Inventory
         run: |
-          echo "[servers]" > ansible/inventory.ini
-          echo "server ansible_host=${{ steps.tf_output.outputs.ip }} ansible_user=azureuser ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> ansible/inventory.ini
+          echo "[all]" > ansible/inventory.ini
+          echo "${{ steps.tf_output.outputs.ip }} ansible_user=azureuser ansible_ssh_pass=bruno1234. ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> ansible/inventory.ini
           cat ansible/inventory.ini
 
       - name: Save Ansible Inventory as Artifact
