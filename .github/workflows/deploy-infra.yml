@@ -1,0 +1,52 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    paths:
+      - 'infra/**'
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra
+
+      - name: Terraform Apply
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+        run: terraform apply -auto-approve
+        working-directory: infra
+
+      - name: Get Terraform Output
+        id: tf_output
+        run: |
+          echo "ip=$(terraform output -raw vm_public_ip)" >> $GITHUB_OUTPUT
+        working-directory: infra
+
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible sshpass
+
+      - name: Generate Ansible Inventory
+        run: |
+          sed "s/__IP_PLACEHOLDER__/${{ steps.tf_output.outputs.ip }}/g" ansible/inventory-template.ini > ansible/inventory.ini
+
+      - name: Save Ansible Inventory as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: inventory
+          path: ansible/inventory.ini
+
+      - name: Run Ansible Playbook (initial provisioning)
+        run: ansible-playbook ansible/deploy.yml -i ansible/inventory.ini

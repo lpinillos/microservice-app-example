@@ -1,0 +1,33 @@
+name: Deploy App with Ansible
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - frontend
+      - auth-api
+      - todos-api
+      - users-api
+    paths-ignore:
+      - 'infra/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Ansible and sshpass
+        run: sudo apt-get update && sudo apt-get install -y ansible sshpass
+
+      - name: Download Ansible Inventory from previous workflow
+        uses: actions/download-artifact@v3
+        with:
+          name: inventory
+          path: ansible
+
+      - name: Run Ansible Playbook (re-deploy app)
+        run: ansible-playbook ansible/deploy.yml -i ansible/inventory.ini
