@@ -36,12 +36,12 @@ jobs:
           echo "ip=$ip" >> $GITHUB_OUTPUT
         working-directory: infra
 
-      - name: Install Ansible
-        run: sudo apt-get update && sudo apt-get install -y ansible sshpass
-
       - name: Generate Ansible Inventory
         run: |
-          sed "s/__IP_PLACEHOLDER__/${{ steps.tf_output.outputs.ip }}/g" ansible/inventory-template.ini > ansible/inventory.ini
+          echo "[servers]" > ansible/inventory.ini
+          echo "server ansible_host=${{ steps.tf_output.outputs.ip }} ansible_user=azureuser ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> ansible/inventory.ini
+          cat ansible/inventory.ini
+
       - name: Save Ansible Inventory as Artifact
         uses: actions/upload-artifact@v4
         with:
