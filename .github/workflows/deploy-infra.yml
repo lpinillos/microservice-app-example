@@ -29,10 +29,10 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: infra
 
-      - name: Get Terraform Output (Public IP)
+      - name: Get Terraform Output
         id: tf_output
         run: |
-          ip=$(terraform output -raw public_ip_address)
+          ip=$(terraform output -raw public_ip_address | head -n1)
           echo "ip=$ip" >> $GITHUB_OUTPUT
         working-directory: infra
 
