@@ -29,30 +29,35 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: infra
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
       - name: Get Terraform Output
         id: tf_output
         run: |
-          IP_ADDRESS=$(terraform output -raw public_ip_address)
-          CLEAN_IP=$(echo "$IP_ADDRESS" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-          echo "Extracted IP address: $CLEAN_IP"
-          echo "ip=$CLEAN_IP" >> $GITHUB_OUTPUT
+          terraform output -json > tf_outputs.json
+          IP=$(jq -r '.public_ip_address.value' tf_outputs.json)
+          echo "Extracted IP address: $IP"
+          echo "ip=$IP" >> $GITHUB_OUTPUT
         working-directory: infra
-
+      
       - name: Install Ansible
         run: sudo apt-get update && sudo apt-get install -y ansible sshpass
-
+      
       - name: Generate Ansible Inventory
         run: |
-          echo "Using IP address: ${{ steps.tf_output.outputs.ip }}"
-          echo "[servers]" > ansible/inventory.ini
-          echo "server ansible_host=${{ steps.tf_output.outputs.ip }} ansible_user=your_user ansible_ssh_pass=your_password" >> ansible/inventory.ini
+          mkdir -p ansible
+          cat > ansible/inventory.ini << EOF
+          [servers]
+          server ansible_host=${{ steps.tf_output.outputs.ip }} ansible_user=azureuser ansible_ssh_pass=${{ secrets.VM_PASSWORD }} ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+          EOF
           cat ansible/inventory.ini
-
+      
       - name: Save Ansible Inventory as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: inventory
           path: ansible/inventory.ini
-
+      
       - name: Run Ansible Playbook (initial provisioning)
         run: ansible-playbook ansible/deploy.yml -i ansible/inventory.ini
