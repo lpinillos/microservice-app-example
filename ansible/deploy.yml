@@ -1,0 +1,31 @@
+- name: Setup microservices application
+  hosts: all
+  become: yes
+  vars:
+    repo_url: https://github.com/lpinillos/microservice-app-example.git
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - git
+          - curl
+          - apt-transport-https
+          - ca-certificates
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    - name: Run Docker install script
+      script: install-deps.sh
+
+    - name: Clone application repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: /home/azureuser/microservice-app-example
+        force: yes
+
+    - name: Run docker-compose
+      shell: docker-compose up -d
+      args:
+        chdir: /home/azureuser/microservice-app-example
