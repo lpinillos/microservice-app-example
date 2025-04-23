@@ -31,8 +31,7 @@ jobs:
 
       - name: Get Terraform Output
         id: tf_output
-        run: |
-          echo "ip=$(terraform output -raw vm_public_ip)" >> $GITHUB_OUTPUT
+        run: echo "ip=$(terraform output -raw public_ip_address)" >> $GITHUB_OUTPUT
         working-directory: infra
 
       - name: Install Ansible
