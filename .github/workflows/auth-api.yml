@@ -2,7 +2,8 @@ name: Auth-api
 
 on:
   push:
-    branches: ["**"]
+    branches:
+      - '**'
     paths:
       - 'auth-api/**'
   pull_request:
