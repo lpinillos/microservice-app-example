@@ -1,7 +1,8 @@
 name: Deploy Infrastructure
 on:
   push:
-    branches: ["**"]
+    branches:
+      - '**'
     paths:
       - 'infra/**'
 jobs:
