@@ -1,3 +1,4 @@
+---
 - name: Setup microservices application
   hosts: all
   become: yes
@@ -5,7 +6,7 @@
     repo_url: https://github.com/lpinillos/microservice-app-example.git
 
   tasks:
-    - name: Install required packages
+    - name: Install required system packages
       apt:
         name:
           - git
@@ -16,7 +17,7 @@
         state: present
         update_cache: yes
 
-    - name: Run Docker install script
+    - name: Install Docker and Docker Compose
       script: install-deps.sh
 
     - name: Clone application repository
@@ -24,11 +25,20 @@
         repo: "{{ repo_url }}"
         dest: /home/azureuser/microservice-app-example
         force: yes
+      retries: 3
+      delay: 10
 
-    - name: Ensure docker-compose is available
-      shell: ln -s ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose || true
+    - name: Ensure docker-compose is available system-wide
+      file:
+        src: /home/azureuser/.docker/cli-plugins/docker-compose
+        dest: /usr/local/bin/docker-compose
+        state: link
+        force: yes
 
-    - name: Run docker-compose
-      shell: sudo docker-compose up -d
+    - name: Start containers with docker-compose
+      command: docker-compose up -d
       args:
         chdir: /home/azureuser/microservice-app-example
+      environment:
+        COMPOSE_DOCKER_CLI_BUILD: 1
+        DOCKER_BUILDKIT: 1
