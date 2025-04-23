@@ -1,4 +1,3 @@
-// Configuracion de terraform
 provider "azurerm" {
   features {}
 }
