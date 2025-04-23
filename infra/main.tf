@@ -1,3 +1,4 @@
+// terraform configuration file
 provider "azurerm" {
   features {}
 }
