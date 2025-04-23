@@ -6,14 +6,14 @@ on:
     paths:
       - 'infra/**'
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Terraform
+      - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init
@@ -28,19 +28,3 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
         run: terraform apply -auto-approve
         working-directory: infra
-
-      - name: Get Terraform Output
-        id: tf_output
-        run: |
-          echo "ip=$(terraform output -raw vm_public_ip)" >> $GITHUB_OUTPUT
-        working-directory: infra
-
-      - name: Install Ansible
-        run: sudo apt-get update && sudo apt-get install -y ansible sshpass
-
-      - name: Generate Ansible Inventory
-        run: |
-          sed "s/__IP_PLACEHOLDER__/${{ steps.tf_output.outputs.ip }}/g" ansible/inventory-template.ini > ansible/inventory.ini
-
-      - name: Run Ansible Playbook
-        run: ansible-playbook ansible/deploy.yml -i ansible/inventory.ini
