@@ -32,8 +32,10 @@ jobs:
       - name: Get Terraform Output
         id: tf_output
         run: |
-          ip=$(terraform output -raw public_ip_address | head -n1)
-          echo "ip=$ip" >> $GITHUB_OUTPUT
+          IP_ADDRESS=$(terraform output -raw public_ip_address)
+          CLEAN_IP=$(echo "$IP_ADDRESS" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+          echo "Extracted IP address: $CLEAN_IP"
+          echo "ip=$CLEAN_IP" >> $GITHUB_OUTPUT
         working-directory: infra
 
       - name: Install Ansible
@@ -41,8 +43,10 @@ jobs:
 
       - name: Generate Ansible Inventory
         run: |
-          ip="${{ steps.tf_output.outputs.ip }}"
-          sed "s/__IP_PLACEHOLDER__/${ip}/g" ansible/inventory-template.ini > ansible/inventory.ini
+          echo "Using IP address: ${{ steps.tf_output.outputs.ip }}"
+          echo "[servers]" > ansible/inventory.ini
+          echo "server ansible_host=${{ steps.tf_output.outputs.ip }} ansible_user=your_user ansible_ssh_pass=your_password" >> ansible/inventory.ini
+          cat ansible/inventory.ini
 
       - name: Save Ansible Inventory as Artifact
         uses: actions/upload-artifact@v4
