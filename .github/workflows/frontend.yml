@@ -2,7 +2,8 @@ name: Frontend
 
 on:
   push:
-    branches: ["**"]
+    branches:
+      - '**'
     paths:
       - 'frontend/**'
   pull_request:
