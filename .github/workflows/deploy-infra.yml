@@ -1,25 +1,22 @@
 name: Deploy Infrastructure
-
 on:
   push:
     paths:
       - 'infra/**'
-
 jobs:
   terraform:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+        
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-
+        
       - name: Terraform Init
         run: terraform init
         working-directory: infra
-
+        
       - name: Terraform Apply
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
@@ -29,33 +26,70 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: infra
 
-      - name: Get Terraform Output (public_ip_address)
-        id: tf_output
+      - name: Extract public IP address
+        id: extract_ip
+        working-directory: infra
         run: |
-          ip=$(terraform output -raw public_ip_address)
-          echo "ip=$ip" >> "$GITHUB_OUTPUT"
-
-      - name: Show captured IP
-        run: echo "VM IP → ${{ steps.tf_output.outputs.ip }}"
-
+          echo "Terraform outputs:"
+          terraform output
+          
+          OUTPUT=$(terraform output | grep "public_ip_address" || echo "")
+          if [[ -z "$OUTPUT" ]]; then
+            echo "No se encontró public_ip_address en el output"
+            exit 1
+          fi
+          
+          IP=$(echo "$OUTPUT" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+          if [[ -z "$IP" ]]; then
+            echo "No se pudo extraer una IP válida"
+            exit 1
+          fi
+          
+          echo "Encontrada IP: $IP"
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          
+      - name: Verify IP
+        run: echo "VM IP → ${{ steps.extract_ip.outputs.ip }}"
+        
       - name: Install sshpass
         run: sudo apt-get update && sudo apt-get install -y sshpass
-
+        
+      - name: Save IP to artifact
+        run: |
+          mkdir -p deployment_info
+          echo "${{ steps.extract_ip.outputs.ip }}" > deployment_info/vm_ip.txt
+        
+      - name: Upload IP as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment_info
+          path: deployment_info/vm_ip.txt
+          
       - name: Deploy app via SSH
         run: |
-          sshpass -p 'bruno1234.' \
-            ssh -o StrictHostKeyChecking=no azureuser@${{ steps.tf_output.outputs.ip }} << 'ENDSSH'
+          echo "Esperando 30 segundos para que la VM esté lista..."
+          sleep 30
+          
+          sshpass -p '${{ secrets.VM_PASSWORD }}' \
+            ssh -o StrictHostKeyChecking=no azureuser@${{ steps.extract_ip.outputs.ip }} << 'ENDSSH'
               set -e
+              echo "Actualizando paquetes..."
               sudo apt-get update
+              echo "Instalando Docker y Git..."
               sudo apt-get install -y docker.io docker-compose git
-
-              # Clonar o actualizar repo
+              
               if [ ! -d microservice-app-example ]; then
+                echo "Clonando repositorio..."
                 git clone https://github.com/lpinillos/microservice-app-example.git
               else
+                echo "Actualizando repositorio existente..."
                 cd microservice-app-example && git pull && cd ..
               fi
-
+              
+              echo "Desplegando con Docker Compose..."
               cd microservice-app-example
               sudo docker-compose up -d
+              
+              echo "Contenedores en ejecución:"
+              sudo docker ps
           ENDSSH
