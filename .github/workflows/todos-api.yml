@@ -2,7 +2,8 @@ name: Todos-api
 
 on:
   push:
-    branches: ["**"]
+    branches:
+      - '**'
     paths:
       - 'todos-api/**'
   pull_request:
