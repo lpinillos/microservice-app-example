@@ -1,0 +1,38 @@
+name: Todos-api
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - 'todos-api/**'
+  pull_request:
+    branches: ["**"]
+    paths:
+      - 'todos-api/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: todos-api
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js 8.17.0
+        uses: actions/setup-node@v3
+        with:
+          node-version: '8.17.0'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests (if defined)
+        run: |
+          if [ -f "package.json" ] && jq -e '.scripts.test' package.json > /dev/null; then
+            npm test
+          else
+            echo "No test script defined, skipping tests."
+          fi

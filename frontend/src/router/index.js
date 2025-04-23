@@ -1,5 +1,5 @@
 import Vue from 'vue'
-
+// test
 import Auth from '@/auth'
 import Router from 'vue-router'
 Vue.use(Router)
