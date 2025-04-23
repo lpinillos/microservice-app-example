@@ -1,95 +1,69 @@
-name: Deploy Infrastructure
+name: Deploy Infrastructure with Ansible
 on:
   push:
     paths:
       - 'infra/**'
+      - 'ansible/**'
+
 jobs:
-  terraform:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        
-      - name: Terraform Init
-        run: terraform init
-        working-directory: infra
-        
-      - name: Terraform Apply
+
+      - name: Terraform Init & Apply
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-        run: terraform apply -auto-approve
-        working-directory: infra
+        run: |
+          cd infra
+          terraform init
+          terraform apply -auto-approve
 
-      - name: Extract public IP address
-        id: extract_ip
+      - name: Get VM IP
+        id: get_ip
         working-directory: infra
         run: |
-          echo "Terraform outputs:"
-          terraform output
-          
-          OUTPUT=$(terraform output | grep "public_ip_address" || echo "")
-          if [[ -z "$OUTPUT" ]]; then
-            echo "No se encontró public_ip_address en el output"
-            exit 1
-          fi
-          
-          IP=$(echo "$OUTPUT" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' || echo "")
-          if [[ -z "$IP" ]]; then
-            echo "No se pudo extraer una IP válida"
-            exit 1
-          fi
-          
-          echo "Encontrada IP: $IP"
-          echo "ip=${IP}" >> $GITHUB_OUTPUT
-          
-      - name: Verify IP
-        run: echo "VM IP → ${{ steps.extract_ip.outputs.ip }}"
-        
-      - name: Install sshpass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
-        
-      - name: Save IP to artifact
+          IP=$(terraform output -raw public_ip_address)
+          echo "VM IP: $IP"
+          echo "vm_ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Generate Ansible inventory
         run: |
-          mkdir -p deployment_info
-          echo "${{ steps.extract_ip.outputs.ip }}" > deployment_info/vm_ip.txt
-        
-      - name: Upload IP as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment_info
-          path: deployment_info/vm_ip.txt
-          
-      - name: Deploy app via SSH
+          mkdir -p ansible/inventory
+          sed "s/{{ vm_ip }}/${{ steps.get_ip.outputs.vm_ip }}/g" ansible/inventory-template.ini > ansible/inventory/hosts
+          echo "Inventario generado:"
+          cat ansible/inventory/hosts
+
+      - name: Install Ansible and dependencies
         run: |
-          echo "Esperando 30 segundos para que la VM esté lista..."
-          sleep 30
-          
-          sshpass -p '${{ secrets.VM_PASSWORD }}' \
-            ssh -o StrictHostKeyChecking=no azureuser@${{ steps.extract_ip.outputs.ip }} << 'ENDSSH'
-              set -e
-              echo "Actualizando paquetes..."
-              sudo apt-get update
-              echo "Instalando Docker y Git..."
-              sudo apt-get install -y docker.io docker-compose git
-              
-              if [ ! -d microservice-app-example ]; then
-                echo "Clonando repositorio..."
-                git clone https://github.com/lpinillos/microservice-app-example.git
-              else
-                echo "Actualizando repositorio existente..."
-                cd microservice-app-example && git pull && cd ..
-              fi
-              
-              echo "Desplegando con Docker Compose..."
-              cd microservice-app-example
-              sudo docker-compose up -d
-              
-              echo "Contenedores en ejecución:"
-              sudo docker ps
-          ENDSSH
+          sudo apt-get update
+          sudo apt-get install -y ansible sshpass
+
+      - name: Wait for VM to be ready
+        run: |
+          IP="${{ steps.get_ip.outputs.vm_ip }}"
+          echo "Esperando a que la VM esté lista (SSH disponible)..."
+          for i in {1..30}; do
+            if nc -z -w 5 $IP 22; then
+              echo "SSH disponible después de $i intentos"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Timeout: SSH no disponible después de 5 minutos"
+          exit 1
+
+      - name: Run Ansible playbook
+        run: |
+          cd ansible
+          ansible-playbook -i inventory/hosts deploy.yml
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          ANSIBLE_REMOTE_TEMP: "/tmp"
