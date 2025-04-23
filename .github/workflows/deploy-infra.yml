@@ -1,13 +1,14 @@
-name: Deploy Infrastructure with Ansible
+name: Deploy Infrastructure
+
 on:
   push:
     paths:
       - 'infra/**'
-      - 'ansible/**'
 
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -15,55 +16,36 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: Terraform Init & Apply
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra
+
+      - name: Terraform Apply
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-        run: |
-          cd infra
-          terraform init
-          terraform apply -auto-approve
-
-      - name: Get VM IP
-        id: get_ip
+        run: terraform apply -auto-approve
         working-directory: infra
-        run: |
-          IP=$(terraform output -raw public_ip_address)
-          echo "VM IP: $IP"
-          echo "vm_ip=$IP" >> $GITHUB_OUTPUT
 
-      - name: Generate Ansible inventory
+      - name: Get Terraform Output
+        id: tf_output
         run: |
-          mkdir -p ansible/inventory
-          sed "s/{{ vm_ip }}/${{ steps.get_ip.outputs.vm_ip }}/g" ansible/inventory-template.ini > ansible/inventory/hosts
-          echo "Inventario generado:"
-          cat ansible/inventory/hosts
+          ip=$(terraform output -raw public_ip_address | head -n1)
+          echo "ip=$ip" >> $GITHUB_OUTPUT
+        working-directory: infra
 
-      - name: Install Ansible and dependencies
+      - name: Generate Ansible Inventory
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ansible sshpass
+          echo "[all]" > ansible/inventory.ini
+          echo "vm ansible_host=${{ steps.tf_output.outputs.ip }} ansible_user=azureuser ansible_ssh_pass=bruno1234. ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> ansible/inventory.ini
+          cat ansible/inventory.ini
+      - name: Save Ansible Inventory as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory
+          path: ansible/inventory.ini
 
-      - name: Wait for VM to be ready
-        run: |
-          IP="${{ steps.get_ip.outputs.vm_ip }}"
-          echo "Esperando a que la VM esté lista (SSH disponible)..."
-          for i in {1..30}; do
-            if nc -z -w 5 $IP 22; then
-              echo "SSH disponible después de $i intentos"
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "Timeout: SSH no disponible después de 5 minutos"
-          exit 1
-
-      - name: Run Ansible playbook
-        run: |
-          cd ansible
-          ansible-playbook -i inventory/hosts deploy.yml
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: "False"
-          ANSIBLE_REMOTE_TEMP: "/tmp"
+      - name: Run Ansible Playbook (initial provisioning)
+        run: ansible-playbook ansible/deploy.yml -i ansible/inventory.ini
