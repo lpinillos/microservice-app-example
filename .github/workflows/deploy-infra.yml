@@ -29,28 +29,33 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: infra
 
-      - name: Get Terraform Output
+      - name: Get Terraform Output (public_ip_address)
         id: tf_output
         run: |
-          ip=$(terraform output -raw public_ip_address | head -n1)
-          echo "ip=$ip" >> $GITHUB_OUTPUT
-        working-directory: infra
+          ip=$(terraform output -raw public_ip_address)
+          echo "ip=$ip" >> "$GITHUB_OUTPUT"
 
-      - name: Install SSH tools
+      - name: Show captured IP
+        run: echo "VM IP → ${{ steps.tf_output.outputs.ip }}"
+
+      - name: Install sshpass
         run: sudo apt-get update && sudo apt-get install -y sshpass
 
       - name: Deploy app via SSH
         run: |
-          sshpass -p 'bruno1234.' ssh -o StrictHostKeyChecking=no azureuser@${{ steps.tf_output.outputs.ip }} << 'ENDSSH'
-            sudo apt-get update
-            sudo apt-get install -y docker.io docker-compose git
+          sshpass -p 'bruno1234.' \
+            ssh -o StrictHostKeyChecking=no azureuser@${{ steps.tf_output.outputs.ip }} << 'ENDSSH'
+              set -e
+              sudo apt-get update
+              sudo apt-get install -y docker.io docker-compose git
 
-            if [ ! -d microservice-app-example ]; then
-              git clone https://github.com/lpinillos/microservice-app-example.git
-            else
-              cd microservice-app-example && git pull
-            fi
+              # Clonar o actualizar repo
+              if [ ! -d microservice-app-example ]; then
+                git clone https://github.com/lpinillos/microservice-app-example.git
+              else
+                cd microservice-app-example && git pull && cd ..
+              fi
 
-            cd microservice-app-example
-            sudo docker-compose up -d
+              cd microservice-app-example
+              sudo docker-compose up -d
           ENDSSH
