@@ -2,7 +2,8 @@ name: Users-api
 
 on:
   push:
-    branches: ["**"]
+    branches:
+      - '**'
     paths:
       - 'users-api/**'
   pull_request:
