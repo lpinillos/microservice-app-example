@@ -43,7 +43,7 @@ jobs:
           sed "s/__IP_PLACEHOLDER__/${{ steps.tf_output.outputs.ip }}/g" ansible/inventory-template.ini > ansible/inventory.ini
 
       - name: Save Ansible Inventory as Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: inventory
           path: ansible/inventory.ini
