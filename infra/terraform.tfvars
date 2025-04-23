@@ -1,1 +1,1 @@
-admin_password = "TuPassword1234!"
+admin_password = "bruno1234."
