@@ -43,24 +43,17 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
         run: |
-          echo "Listing all terraform outputs:"
-          terraform output || echo "Error listing outputs"
+          # Captura la IP limpiando cualquier texto adicional
+          PUBLIC_IP=$(terraform output -raw public_ip_address | head -n 1 | tr -d '[:space:]')
+          echo "Captured IP address: $PUBLIC_IP"
           
-          echo "Listing terraform state:"
-          terraform state list | grep public_ip || echo "No public IP found in state"
-          
-          echo "Attempting to capture public IP address..."
-          PUBLIC_IP=$(terraform output -raw public_ip_address 2>&1 || echo "failed")
-          echo "Captured value: $PUBLIC_IP"
-          
-          if [[ "$PUBLIC_IP" == *"failed"* ]] || [[ "$PUBLIC_IP" == *"Error"* ]]; then
-            echo "Failed to get public_ip_address output"
-            echo "Debugging terraform state..."
-            terraform state show azurerm_public_ip.public_ip || echo "Could not show resource details"
-            exit 1
-          else
+          # Verifica que sea una dirección IP válida
+          if [[ $PUBLIC_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
             echo "Successfully set PUBLIC_IP environment variable"
+          else
+            echo "Error: The captured value '$PUBLIC_IP' doesn't appear to be a valid IP address"
+            exit 1
           fi
         working-directory: infra
       
