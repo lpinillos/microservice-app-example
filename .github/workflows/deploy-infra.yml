@@ -41,7 +41,7 @@ jobs:
 
       - name: Deploy app via SSH
         run: |
-          sshpass -p 'TuPassword1234!' ssh -o StrictHostKeyChecking=no azureuser@${{ steps.tf_output.outputs.ip }} << 'ENDSSH'
+          sshpass -p 'bruno1234.' ssh -o StrictHostKeyChecking=no azureuser@${{ steps.tf_output.outputs.ip }} << 'ENDSSH'
             sudo apt-get update
             sudo apt-get install -y docker.io docker-compose git
 
