@@ -48,6 +48,6 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
         run: |
-          export ANSIBLE_ROLES_PATH=./roles
+          export ANSIBLE_ROLES_PATH=./ansible
           ansible-playbook -i ${{ secrets.INVENTORY_PATH }} playbooks/install_docker.yml
         working-directory: ./ansible
