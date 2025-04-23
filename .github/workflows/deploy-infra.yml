@@ -41,7 +41,8 @@ jobs:
 
       - name: Generate Ansible Inventory
         run: |
-          sed "s/__IP_PLACEHOLDER__/${{ steps.tf_output.outputs.ip }}/g" ansible/inventory-template.ini > ansible/inventory.ini
+          ip="${{ steps.tf_output.outputs.ip }}"
+          sed "s/__IP_PLACEHOLDER__/${ip}/g" ansible/inventory-template.ini > ansible/inventory.ini
 
       - name: Save Ansible Inventory as Artifact
         uses: actions/upload-artifact@v4
