@@ -24,7 +24,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ansible sshpass
 
       - name: Download Ansible Inventory from previous workflow
-        uses: actions/download-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: inventory
           path: ansible
