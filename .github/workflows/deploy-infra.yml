@@ -27,11 +27,21 @@ jobs:
         working-directory: infra
       
       - name: Terraform Refresh
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
         run: terraform refresh
         working-directory: infra
       
       - name: Capture Terraform Output
         id: terraform_output
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
         run: |
           echo "PUBLIC_IP=$(terraform output -raw public_ip_address)" >> $GITHUB_ENV
         working-directory: infra
@@ -48,6 +58,6 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
         run: |
-          export ANSIBLE_ROLES_PATH=./ansible
+          export ANSIBLE_ROLES_PATH=./roles
           ansible-playbook -i ${{ secrets.INVENTORY_PATH }} playbooks/install_docker.yml
         working-directory: ./ansible
