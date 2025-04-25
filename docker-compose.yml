@@ -43,7 +43,7 @@ services:
       - cache
     restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://172.178.40.170:8000/login"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/login"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -63,7 +63,7 @@ services:
       - cache
     restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://172.178.40.170:8083/users"]
+      test: ["CMD", "curl", "-f", "http://localhost:8083/users"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -91,7 +91,7 @@ services:
       - cache
     restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://172.178.40.170:8082/todos"]
+      test: ["CMD", "curl", "-f", "http://localhost:8082/todos"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -121,7 +121,7 @@ services:
       - todos-api
     restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://172.178.40.170:8081/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 10s
       timeout: 5s
       retries: 3
