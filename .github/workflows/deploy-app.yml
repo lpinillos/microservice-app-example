@@ -20,7 +20,7 @@ jobs:
           SSH_PASS: ${{ secrets.VM_PASSWORD }}
         run: |
           export SSHPASS=$SSH_PASS
-          sshpass -e ssh -o StrictHostKeyChecking=no azureuser@172.178.40.170 '
+          sshpass -e ssh -o StrictHostKeyChecking=no azureuser@172.191.101.246 '
             # Parar los contenedores actuales
             cd microservice-app-example
             sudo docker-compose down
