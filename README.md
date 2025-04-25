@@ -12,9 +12,59 @@ In each folder you can find a more in-depth explanation of each component:
 5. [Frontend](/frontend) Vue application, provides UI.
 
 ## Architecture
+<img width="965" alt="Screenshot 2025-04-23 at 11 30 47 AM" src="https://github.com/user-attachments/assets/bfc02c5d-fced-4908-82d7-46479327fe36" />
 
 Take a look at the components diagram that describes them and their interactions.
-![microservice-app-example](/arch-img/Microservices.png)
+
+## Workflows
+
+The following GitHub Actions workflows are configured:
+
+- `auth-api.yml`
+- `deploy-app.yml`
+- `deploy-infra.yml`
+- `frontend.yml`
+- `log-message-processor.yml`
+- `todos-api.yml`
+- `users-api.yml`
+
+## Agile Methodology
+
+We follow a Scrum-based development approach. You can find the board [here](https://docs.google.com/spreadsheets/d/1xYkQaqoBBeor4f1m7Yfc0LKtROHPU7GbzGJ4xlwMVnM/edit?usp=sharing).
+
+## Cloud Design Patterns Implemented
+
+- **Bulkhead**
+- **Cache-Aside**
+- **Circuit Breaker**
+- **Health Endpoint Monitoring**
+
+## Observability
+
+Integrated with **Grafana** and **Prometheus**.
+
+**Prometheus scrape config:**
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['host.docker.internal:9100']
+
+  - job_name: 'users-api'
+    metrics_path: /healthz
+    static_configs:
+      - targets: ['users-api:8083']
+
+  - job_name: 'circuit-breaker'
+    metrics_path: /circuitz
+    static_configs:
+      - targets: ['users-api:8083']
+```
+
+Circuit Breaker metrics endpoint: Custom endpoint /circuitz exposes Resilience4j circuit breaker stats as Prometheus metrics.
 
 ### Docker
 
@@ -64,3 +114,106 @@ Cleaning Containers
 To stop and remove all containers:
 
 ```docker-compose down```
+
+
+
+## Infraestructure
+
+Terraform
+
+```
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "rg" {
+  name     = var.resource_group_name
+  location = var.location
+}
+
+resource "azurerm_virtual_network" "vnet" {
+  name                = "vnet-devops"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+resource "azurerm_subnet" "subnet" {
+  name                 = "subnet-devops"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+resource "azurerm_public_ip" "public_ip" {
+  name                = "publicip-devops"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard" 
+}
+
+resource "azurerm_network_interface" "nic" {
+  name                = "nic-devops"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  ip_configuration {
+    name                          = "ipconfig1"
+    subnet_id                     = azurerm_subnet.subnet.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.public_ip.id
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "vm" {
+  name                = "vm-devops"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.location
+  size                = var.vm_size
+  admin_username      = var.admin_username
+  admin_password      = var.admin_password
+  disable_password_authentication = false
+  network_interface_ids = [
+    azurerm_network_interface.nic.id,
+  ]
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+}
+
+resource "azurerm_network_security_group" "nsg" {
+  name                = "nsg-devops"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  security_rule {
+    name                       = "Allow-SSH"
+    priority                   = 1001
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
+  network_interface_id      = azurerm_network_interface.nic.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
+```
+
+
