@@ -29,7 +29,9 @@ jobs:
         
       - name: Get VM IP
         id: vm-ip
-        run: echo "vm_ip=$(terraform output -raw vm_public_ip)" >> $GITHUB_OUTPUT
+        run: |
+          VM_IP=$(terraform output vm_public_ip | tr -d '"')
+          echo "vm_ip=$VM_IP" >> $GITHUB_OUTPUT
         working-directory: infra
         
       - name: Wait for VM to be available
