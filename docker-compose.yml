@@ -184,7 +184,9 @@ services:
       - backend
 
   nginx-retry:
-    build: ./nginx-retry-gateway
+    image: nginx:latest
+    volumes: 
+      - ./nginx-retry-gateway/nginx.conf
     ports:
       - "80:80"
     depends_on:
