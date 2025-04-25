@@ -141,3 +141,12 @@ resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
   network_interface_id      = azurerm_network_interface.nic.id
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
+
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "devops-workshop"
+    storage_account_name = "tfstatestorage123"
+    container_name       = "tfstate"
+    key                  = "terraform.tfstate"
+  }
+}
