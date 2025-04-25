@@ -7,7 +7,7 @@
 variable "resource_group_name" {
   description = "Name of the resource group"
   type        = string
-  default     = "devops-workshop"
+  default     = "devops-workshop-1"
 }
 
 variable "admin_username" {
