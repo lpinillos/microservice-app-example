@@ -22,10 +22,10 @@ jobs:
           export SSHPASS=$SSH_PASS
           sshpass -e ssh -o StrictHostKeyChecking=no azureuser@172.178.40.170 '
             # Parar los contenedores actuales
-            cd ~/microservice-app-example
+            cd microservice-app-example
             docker-compose down
             
-            cd ~
+            cd ..
             rm -rf microservice-app-example
             
             git clone https://github.com/lpinillos/microservice-app-example.git
