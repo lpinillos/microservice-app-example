@@ -1,4 +1,3 @@
-// main
 provider "azurerm" {
   features {}
 }
