@@ -3,10 +3,7 @@ name: Continuous Deployment
 on:
   push:
     branches:
-      - master
-    paths:
-      - 'microservice-app/**'
-
+      - 'master'
 jobs:
   deploy:
     runs-on: ubuntu-latest
