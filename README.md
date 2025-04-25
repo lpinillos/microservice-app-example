@@ -12,7 +12,7 @@ In each folder you can find a more in-depth explanation of each component:
 5. [Frontend](/frontend) Vue application, provides UI.
 
 ## Architecture
-<img width="965" alt="Screenshot 2025-04-23 at 11 30 47 AM" src="https://github.com/user-attachments/assets/bfc02c5d-fced-4908-82d7-46479327fe36" />
+<img width="1192" alt="Screenshot 2025-04-25 at 11 22 10 AM" src="https://github.com/user-attachments/assets/640eab1a-0209-4c9d-8d45-1cd119f4ec28" />
 
 Take a look at the components diagram that describes them and their interactions.
 
