@@ -66,6 +66,9 @@ resource "azurerm_linux_virtual_machine" "vm" {
     sku       = var.image_sku
     version   = var.image_version
   }
+
+    provision_vm_agent = true
+    custom_data        = base64encode(file("config.sh"))
 }
 
 resource "azurerm_network_security_group" "nsg" {
