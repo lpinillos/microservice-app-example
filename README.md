@@ -17,10 +17,10 @@ In each folder you can find a more in-depth explanation of each component:
 Take a look at the components diagram that describes them and their interactions.
 
 ## Deployment
-Frontend ``` http://172.191.101.246:8081/#/login?redirect=%2F ```
-Zipkin ``` http://172.191.101.246:9411/zipkin/#/  ```
-Prometheus ``` http://172.191.101.246:9090/targets ```
-Grafana ```http://172.191.101.246:3000/login ```
+- Frontend ``` http://172.191.101.246:8081/#/login?redirect=%2F ```
+- Zipkin ``` http://172.191.101.246:9411/zipkin/#/  ```
+- Prometheus ``` http://172.191.101.246:9090/targets ```
+- Grafana ```http://172.191.101.246:3000/login ```
 
 
 ## Workflows
