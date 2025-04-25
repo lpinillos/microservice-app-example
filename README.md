@@ -122,6 +122,7 @@ To stop and remove all containers:
 Terraform
 
 ```
+// main
 provider "azurerm" {
   features {}
 }
@@ -132,42 +133,43 @@ resource "azurerm_resource_group" "rg" {
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = "vnet-devops"
-  address_space       = ["10.0.0.0/16"]
+  name                = var.vnet_name
+  address_space       = var.vnet_address_space
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
 resource "azurerm_subnet" "subnet" {
-  name                 = "subnet-devops"
+  name                 = var.subnet_name
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
+  address_prefixes     = var.subnet_address_prefixes
 }
 
 resource "azurerm_public_ip" "public_ip" {
-  name                = "publicip-devops"
+  name                = var.public_ip_name
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-  allocation_method   = "Static"
-  sku                 = "Standard" 
+  allocation_method   = var.public_ip_allocation_method
+  sku                 = var.public_ip_sku
 }
 
 resource "azurerm_network_interface" "nic" {
-  name                = "nic-devops"
+  name                = var.nic_name
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
     name                          = "ipconfig1"
     subnet_id                     = azurerm_subnet.subnet.id
-    private_ip_address_allocation = "Dynamic"
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.0.1.4"
     public_ip_address_id          = azurerm_public_ip.public_ip.id
   }
 }
 
 resource "azurerm_linux_virtual_machine" "vm" {
-  name                = "vm-devops"
+  name                = var.vm_name
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
   size                = var.vm_size
@@ -180,19 +182,22 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   os_disk {
     caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
+    storage_account_type = var.storage_account_type
   }
 
   source_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
-    version   = "latest"
+    publisher = var.image_publisher
+    offer     = var.image_offer
+    sku       = var.image_sku
+    version   = var.image_version
   }
+
+    provision_vm_agent = true
+    custom_data        = base64encode(file("config.sh"))
 }
 
 resource "azurerm_network_security_group" "nsg" {
-  name                = "nsg-devops"
+  name                = var.nsg_name
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -207,11 +212,68 @@ resource "azurerm_network_security_group" "nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
+  security_rule {
+    name                       = "port-8000"
+    priority                   = 1002
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8000"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "port-8081"
+    priority                   = 1003
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8081"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "port-8082"
+    priority                   = 1004
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8082"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "port-8083"
+    priority                   = 1005
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8083"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
 
 resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
   network_interface_id      = azurerm_network_interface.nic.id
   network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "devops-workshop"
+    storage_account_name = "tfstatestorage123lp"
+    container_name       = "tfstatelp"
+    key                  = "terraform.tfstate"
+  }
 }
 
 ```
