@@ -1,19 +1,17 @@
-name: Deploy Infrastructure and App with Ansible
-
+name: Deploy Infrastructure and Configure App
 on:
   push:
     paths:
       - 'infra/**'
-
+      - 'ansible/**'
 jobs:
-  full-deploy:
+  deploy:
     runs-on: ubuntu-latest
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -28,3 +26,25 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve
         working-directory: infra
+        
+      - name: Get VM IP
+        id: vm-ip
+        run: echo "vm_ip=$(terraform output -raw vm_public_ip)" >> $GITHUB_OUTPUT
+        working-directory: infra
+        
+      - name: Wait for VM to be available
+        run: sleep 90
+      
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible sshpass
+      
+      - name: Prepare Ansible inventory
+        run: |
+          sed "s/__IP_PLACEHOLDER__/${{ steps.vm-ip.outputs.vm_ip }}/g" ansible/inventory.ini > ansible/inventory_deployed.ini
+      
+      - name: Run Ansible playbook
+        run: |
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook -i ansible/inventory_deployed.ini ansible/setup.yml
