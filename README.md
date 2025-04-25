@@ -217,3 +217,144 @@ resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
 ```
 
 
+```markdown
+
+
+---
+
+## Estructura del Proyecto
+
+```bash
+.
+├── auth-api/                # Servicio en Go
+├── todos-api/              # Servicio en Node.js
+├── users-api/              # Servicio en Java (Maven)
+├── frontend/               # Aplicación frontend en Node.js
+├── log-message-processor/  # Procesador de logs en Python
+├── infra/                  # Código de infraestructura en Terraform
+├── .github/
+│   └── workflows/          # Workflows de GitHub Actions
+```
+
+---
+
+## Workflows de CI/CD
+
+### 1. Auth-api
+
+- **Lenguaje:** Go (v1.18)
+- **Disparador:** Push o PR en `auth-api/**`
+- **Acciones:**
+  - Compilación del servicio
+  - Ejecución de pruebas de disponibilidad
+
+```yaml
+go build -o main .
+./main & curl -I http://localhost:8000
+```
+
+---
+
+### 2. Todos-api
+
+- **Lenguaje:** Node.js (v8.17.0)
+- **Disparador:** Push o PR en `todos-api/**`
+- **Acciones:**
+  - Instalación de dependencias
+  - Ejecución de tests si están definidos en `package.json`
+
+---
+
+### 3. Users-api
+
+- **Lenguaje:** Java (JDK 8, Maven)
+- **Disparador:** Push o PR en `users-api/**`
+- **Acciones:**
+  - Compilación con Maven (`./mvnw clean install`)
+
+---
+
+### 4. Frontend
+
+- **Lenguaje:** Node.js (v8.17.0)
+- **Disparador:** Push o PR en `frontend/**`
+- **Acciones:**
+  - Instalación y construcción de la app
+  - Ejecución local para pruebas de disponibilidad
+
+```bash
+npm run build
+PORT=8081 npm start & curl -I http://localhost:8081
+```
+
+---
+
+### 5. Log Message Processor (Python)
+
+- **Lenguaje:** Python 3.10
+- **Disparador:** Push en `log-message-processor/**`
+- **Acciones:**
+  - Instalación de dependencias
+  - Verificación de sintaxis (`python -m py_compile`)
+
+---
+
+### 6. Deploy Infrastructure (Terraform)
+
+- **Disparador:** Push en `infra/**`
+- **Acciones:**
+  - `terraform init` y `terraform apply` con credenciales desde secretos
+
+```yaml
+working-directory: infra
+```
+
+- **Variables de entorno necesarias:**
+  - `ARM_CLIENT_ID`
+  - `ARM_CLIENT_SECRET`
+  - `ARM_SUBSCRIPTION_ID`
+  - `ARM_TENANT_ID`
+
+---
+
+### 7. Continuous Deployment a VM
+
+- **Disparador:** Push a rama `master`
+- **Acciones:**
+  - Conexión SSH a la VM usando `sshpass`
+  - Detención de contenedores existentes
+  - Clonado y reconstrucción del repositorio en la VM
+
+```bash
+sudo docker-compose down
+git clone ...
+sudo docker-compose up -d --build
+```
+
+- **Requiere el secreto:** `VM_PASSWORD`
+
+---
+
+## Requerimientos
+
+- GitHub Actions activado en el repositorio.
+- Docker y Docker Compose en la máquina destino.
+- Infraestructura soportada por Azure (ARM).
+- Repositorio bien estructurado por microservicio.
+- Test scripts definidos donde aplique (`npm test`, `go test`, etc.).
+
+---
+
+## Secretos Requeridos
+
+Se deben definir los siguientes secretos en la configuración del repositorio:
+
+| Nombre del Secreto       | Uso en Workflow                        |
+|--------------------------|----------------------------------------|
+| `VM_PASSWORD`            | Acceso remoto vía SSH a la VM          |
+| `ARM_CLIENT_ID`          | Terraform (Azure)                      |
+| `ARM_CLIENT_SECRET`      | Terraform (Azure)                      |
+| `ARM_SUBSCRIPTION_ID`    | Terraform (Azure)                      |
+| `ARM_TENANT_ID`          | Terraform (Azure)                      |
+
+---
