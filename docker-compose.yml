@@ -1,4 +1,5 @@
 version: "3.3"
+
 services:
   redis:
     image: redis:7
@@ -125,6 +126,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
+  nginx-retry:
+    build: ./nginx-retry-gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-api
+      - todos-api
+      - users-api
+      - frontend
 
 volumes:
   redis-data:
