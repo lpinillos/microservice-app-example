@@ -12,6 +12,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
+    networks:
+      - backend
 
   cache:
     image: redis:7
@@ -25,6 +27,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
+    networks:
+      - backend
+
+  zipkin:
+    image: openzipkin/zipkin
+    networks:
+      - backend
+    ports:
+      - "9411:9411"
+    restart: unless-stopped
+
+
 
   auth-api:
     build: ./auth-api
@@ -47,6 +61,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - backend
 
   users-api:
     build: ./users-api
@@ -67,6 +83,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - backend
 
   todos-api:
     build: ./todos-api
@@ -84,6 +102,7 @@ services:
       - CIRCUIT_BREAKER_TIMEOUT=3000
       - CIRCUIT_BREAKER_RESET_TIMEOUT=30000
       - CIRCUIT_BREAKER_ERROR_THRESHOLD=50
+      - ZIPKIN_URL=http://zipkin:9411/api/v2/spans
     ports:
       - "8082:8082"
     depends_on:
@@ -95,6 +114,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - backend
 
   log-processor:
     build: ./log-message-processor
@@ -105,6 +126,8 @@ services:
     depends_on:
       - redis
     restart: on-failure
+    networks:
+      - backend
 
   frontend:
     build: ./frontend
@@ -114,17 +137,23 @@ services:
       - TODOS_API_ADDRESS=http://todos-api:8082
       - RETRY_ATTEMPTS=3
       - RETRY_DELAY=1000
+      - ZIPKIN_URL=http://zipkin:9411/api/v2/spans
     ports:
       - "8081:8081"
+    extra_hosts:
+      - "127.0.0.1:host-gateway"
     depends_on:
       - auth-api
       - todos-api
+      - zipkin
     restart: on-failure
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - backend
 
   prometheus:
     image: prom/prometheus
@@ -132,11 +161,15 @@ services:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    networks:
+      - backend
 
   node-exporter:
     image: prom/node-exporter
     ports:
       - "9100:9100"
+    networks:
+      - backend
 
   grafana:
     image: grafana/grafana
@@ -146,8 +179,14 @@ services:
       - grafana-storage:/var/lib/grafana
     depends_on:
       - prometheus
+    networks:
+      - backend
 
 volumes:
   grafana-storage:
   redis-data:
   cache-data:
+
+
+networks:
+  backend:
