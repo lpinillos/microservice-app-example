@@ -1,33 +1,38 @@
-name: Deploy App with Ansible
+name: Continuous Deployment
 
 on:
   push:
     branches:
       - main
-      - dev
-      - frontend
-      - auth-api
-      - todos-api
-      - users-api
-    paths-ignore:
-      - 'infra/**'
+    paths:
+      - 'microservice-app/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Install Ansible and sshpass
-        run: sudo apt-get update && sudo apt-get install -y ansible sshpass
-
-      - name: Download Ansible Inventory from previous workflow
-        uses: actions/download-artifact@v4
-        with:
-          name: inventory
-          path: ansible
-
-      - name: Run Ansible Playbook (re-deploy app)
-        run: ansible-playbook ansible/deploy.yml -i ansible/inventory.ini
+      
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+      
+      - name: Deploy to VM
+        env:
+          SSH_PASS: ${{ secrets.VM_PASSWORD }}
+        run: |
+          export SSHPASS=$SSH_PASS
+          sshpass -e ssh -o StrictHostKeyChecking=no azureuser@172.178.40.170 '
+            # Parar los contenedores actuales
+            cd ~/microservice-app-example
+            docker-compose down
+            
+            cd ~
+            rm -rf microservice-app-example
+            
+            git clone https://github.com/lpinillos/microservice-app-example.git
+            
+            cd microservice-app-example
+            docker-compose up -d --build
+          '
