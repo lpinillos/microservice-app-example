@@ -26,6 +26,13 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
 
         final HttpServletRequest request = (HttpServletRequest) req;
         final HttpServletResponse response = (HttpServletResponse) res;
+        final String path = request.getRequestURI();
+        // Excluir /actuator/prometheus y /health
+        if (path.startsWith("/health") || path.startsWith("/actuator/prometheus") || path.startsWith("/circuitz")) {
+            chain.doFilter(req, res);
+            return;
+        }
+
         final String authHeader = request.getHeader("authorization");
 
         if ("OPTIONS".equals(request.getMethod())) {
