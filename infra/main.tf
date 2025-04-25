@@ -145,8 +145,8 @@ resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
 terraform {
   backend "azurerm" {
     resource_group_name  = "devops-workshop"
-    storage_account_name = "tfstatestorage123"
-    container_name       = "tfstate"
+    storage_account_name = "tfstatestorage123lp"
+    container_name       = "tfstatelp"
     key                  = "terraform.tfstate"
   }
 }
