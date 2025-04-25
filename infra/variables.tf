@@ -19,7 +19,7 @@ variable "admin_username" {
 variable "admin_password" {
   description = "Password for the admin user"
   type        = string
-  default   = "bruno1234."
+  sensitive   = true
 }
 
 variable "vm_size" {
