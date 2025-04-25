@@ -17,17 +17,6 @@ jobs:
         run: terraform init
         working-directory: infra
       
-      - name: Terraform Destroy Existing Resources
-        env:
-          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-          TF_VAR_admin_password: ${{ secrets.VM_PASSWORD }}
-        run: terraform destroy -auto-approve
-        working-directory: infra
-        continue-on-error: true
-      
       - name: Terraform Apply
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
