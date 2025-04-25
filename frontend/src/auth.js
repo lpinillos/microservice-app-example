@@ -2,7 +2,6 @@ import Vue from 'vue'
 import router from './router'
 import store from './store'
 import decode from 'jwt-decode'
-//test
 /**
  * @var{string} LOGIN_URL The endpoint for logging in. This endpoint should be proxied by Webpack dev server
  *    and maybe nginx in production (cleaner calls and avoids CORS issues).
